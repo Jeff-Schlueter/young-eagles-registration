@@ -109,6 +109,64 @@ function App() {
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
   }
+  function getFilteredGuardianEmails() {
+    const emails = filteredCampers
+      .flatMap((c) =>
+        (c.guardians || [])
+          .map((g) => (g.email || '').trim().toLowerCase())
+          .filter(Boolean)
+      )
+
+    return [...new Set(emails)].sort()
+  }
+
+  function exportEmailsCsv() {
+    const emails = getFilteredGuardianEmails()
+
+    if (emails.length === 0) {
+      alert('No guardian email addresses found for this session/filter')
+      return
+    }
+
+    const csvLines = ['email', ...emails]
+    const csvContent = csvLines.join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement('a')
+    const sessionName =
+      sessions.find((s) => s.id === selectedSessionId)?.name ||
+      activeSession?.name ||
+      'session'
+
+    const safeSessionName = sessionName.replace(/[^a-z0-9]+/gi, '_').toLowerCase()
+
+    link.href = url
+    link.setAttribute('download', `${safeSessionName}_guardian_emails.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  async function copyEmailsToClipboard() {
+    const emails = getFilteredGuardianEmails()
+
+    if (emails.length === 0) {
+      alert('No guardian email addresses found for this session/filter')
+      return
+    }
+
+    const emailList = emails.join(', ')
+
+    try {
+      await navigator.clipboard.writeText(emailList)
+      alert(`Copied ${emails.length} email address(es) to clipboard`)
+    } catch (error) {
+      console.error(error)
+      alert('Could not copy emails to clipboard')
+    }
+  }
 
   async function loadCampers(sessionIdOverride = null) {
     setLoading(true)
@@ -744,11 +802,20 @@ function App() {
         </div>
 
         <div style={{ border: '1px solid #ddd', borderRadius: 12, padding: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <h2 style={{ margin: 0 }}>Registrations</h2>
-            <button type="button" onClick={exportRosterCsv}>
-              Export CSV
-            </button>
+
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" onClick={exportRosterCsv}>
+                Export Roster CSV
+              </button>
+              <button type="button" onClick={exportEmailsCsv}>
+                Export Emails CSV
+              </button>
+              <button type="button" onClick={copyEmailsToClipboard}>
+                Copy Emails
+              </button>
+            </div>
           </div>
 
           <input
