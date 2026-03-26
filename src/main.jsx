@@ -173,6 +173,7 @@ function App() {
   }
 
   async function loadCampers(sessionIdOverride = null) {
+    if (!session) return
     setLoading(true)
 
     const { data: sessionsData, error: sessionsError } = await supabase
@@ -266,14 +267,16 @@ function App() {
   }
 
   useEffect(() => {
-    loadCampers()
-  }, [])
+    if (session) {
+      loadCampers()
+    }
+  }, [session])
 
   useEffect(() => {
-    if (selectedSessionId) {
+    if (session && selectedSessionId) {
       loadCampers(selectedSessionId)
     }
-  }, [selectedSessionId])
+  }, [session, selectedSessionId])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
