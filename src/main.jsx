@@ -14,6 +14,10 @@ function App() {
   const [editingCamperId, setEditingCamperId] = useState(null)
   const [editingGuardianId, setEditingGuardianId] = useState(null)
   const [editingEmergencyId, setEditingEmergencyId] = useState(null)
+  const [session, setSession] = useState(null)
+  const [authEmail, setAuthEmail] = useState('')
+  const [authPassword, setAuthPassword] = useState('')
+  const [authLoading, setAuthLoading] = useState(true)
 
   const [form, setForm] = useState({
     first_name: '',
@@ -270,6 +274,22 @@ function App() {
       loadCampers(selectedSessionId)
     }
   }, [selectedSessionId])
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setAuthLoading(false)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setAuthLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -633,14 +653,86 @@ function App() {
     }
   }
 
+  async function handleSignIn(e) {
+    e.preventDefault()
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: authEmail,
+      password: authPassword,
+    })
+
+    if (error) {
+      alert(error.message)
+    }
+  }
+
+  async function handleSignUp(e) {
+    e.preventDefault()
+
+    const { error } = await supabase.auth.signUp({
+      email: authEmail,
+      password: authPassword,
+    })
+
+    if (error) {
+      alert(error.message)
+    } else {
+      alert('Account created. You can now sign in.')
+    }
+  }
+
+  async function handleSignOut() {
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      alert(error.message)
+    }
+  }
+
   const filteredCampers = campers.filter((c) =>
     `${c.campers?.first_name ?? ''} ${c.campers?.last_name ?? ''}`
       .toLowerCase()
       .includes(search.toLowerCase())
   )
 
+  if (authLoading) {
+    return <div style={{ padding: 24, fontFamily: 'Arial, sans-serif' }}>Loading...</div>
+  }
+
+  if (!session) {
+    return (
+      <div style={{ maxWidth: 420, margin: '60px auto', padding: 24, border: '1px solid #ddd', borderRadius: 12, fontFamily: 'Arial, sans-serif' }}>
+        <h1>Young Eagles Workshop Login</h1>
+        <form onSubmit={handleSignIn} style={{ display: 'grid', gap: 12 }}>
+          <input
+            type="email"
+            placeholder="Email"
+            value={authEmail}
+            onChange={(e) => setAuthEmail(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={authPassword}
+            onChange={(e) => setAuthPassword(e.target.value)}
+            required
+          />
+          <button type="submit">Sign In</button>
+          <button type="button" onClick={handleSignUp}>
+            Create Admin Account
+          </button>
+        </form>
+      </div>
+    )
+  }
+
   return (
     <div style={{ fontFamily: 'Arial, sans-serif', padding: 24, maxWidth: 1400, margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+        <button type="button" onClick={handleSignOut}>
+          Sign Out
+        </button>
+      </div>
       <h1>Young Eagles Workshop Registration</h1>
       <p>
         Viewing Session:{' '}
