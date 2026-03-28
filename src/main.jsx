@@ -721,9 +721,7 @@ function App() {
             required
           />
           <button type="submit">Sign In</button>
-          <button type="button" onClick={handleSignUp}>
-            Create Admin Account
-          </button>
+          
         </form>
       </div>
     )
