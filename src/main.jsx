@@ -37,6 +37,7 @@ function App() {
     emergency_phone: '',
     liability_waiver: false,
     photo_release: false,
+    use_primary_guardian_for_emergency: false,
   })
 
   function exportRosterCsv() {
@@ -298,6 +299,44 @@ function App() {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
+  function updateField(key, value) {
+    setForm((prev) => {
+      const updated = { ...prev, [key]: value }
+
+      if (updated.use_primary_guardian_for_emergency) {
+        const fullName = `${updated.guardian_first_name || ''} ${updated.guardian_last_name || ''}`.trim()
+
+        updated.emergency_name = fullName
+        updated.emergency_relationship = 'Primary Guardian'
+        updated.emergency_phone = updated.guardian_phone || ''
+      }
+
+      return updated
+    })
+  }
+
+  function toggleUsePrimaryGuardianForEmergency(checked) {
+    if (checked) {
+      const fullName = `${form.guardian_first_name || ''} ${form.guardian_last_name || ''}`.trim()
+
+      setForm((prev) => ({
+        ...prev,
+        use_primary_guardian_for_emergency: true,
+        emergency_name: fullName,
+        emergency_relationship: 'Primary Guardian',
+        emergency_phone: prev.guardian_phone || '',
+      }))
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        use_primary_guardian_for_emergency: false,
+        emergency_name: '',
+        emergency_relationship: '',
+        emergency_phone: '',
+      }))
+    }
+  }
+
   function resetForm() {
     setForm({
       first_name: '',
@@ -317,6 +356,7 @@ function App() {
       emergency_phone: '',
       liability_waiver: false,
       photo_release: false,
+      use_primary_guardian_for_emergency: false,
     })
 
     setEditingRegistrationId(null)
@@ -721,7 +761,9 @@ function App() {
             required
           />
           <button type="submit">Sign In</button>
-          
+          <p style={{ fontSize: 12, color: '#666' }}>
+            Contact administrator for access
+          </p>
         </form>
       </div>
     )
@@ -839,19 +881,38 @@ function App() {
             />
 
             <h3 style={{ marginBottom: 0, marginTop: 12 }}>Emergency Contact</h3>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 8,
+                fontSize: '14px'
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={form.use_primary_guardian_for_emergency}
+                onChange={(e) => toggleUsePrimaryGuardianForEmergency(e.target.checked)}
+              />
+              Use Primary Guardian as Emergency Contact
+            </label>
             <input
               placeholder="Emergency contact name"
               value={form.emergency_name}
+              disabled={form.use_primary_guardian_for_emergency}
               onChange={(e) => updateField('emergency_name', e.target.value)}
             />
             <input
               placeholder="Emergency relationship"
               value={form.emergency_relationship}
+              disabled={form.use_primary_guardian_for_emergency}
               onChange={(e) => updateField('emergency_relationship', e.target.value)}
             />
             <input
-              placeholder="Emergency phone (required if adding Contact)"
+              placeholder="Emergency phone"
               value={form.emergency_phone}
+              disabled={form.use_primary_guardian_for_emergency}
               onChange={(e) => updateField('emergency_phone', e.target.value)}
             />
             <h3 style={{ marginBottom: 0, marginTop: 12 }}>Registration Details</h3>
