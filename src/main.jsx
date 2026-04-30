@@ -18,6 +18,7 @@ function App() {
   const [authEmail, setAuthEmail] = useState('')
   const [authPassword, setAuthPassword] = useState('')
   const [authLoading, setAuthLoading] = useState(true)
+  const [waiverFilter, setWaiverFilter] = useState('all')
 
   const [form, setForm] = useState({
     first_name: '',
@@ -731,11 +732,17 @@ function App() {
     }
   }
 
-  const filteredCampers = campers.filter((c) =>
-    `${c.campers?.first_name ?? ''} ${c.campers?.last_name ?? ''}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  )
+  const filteredCampers = campers
+    .filter((c) =>
+      `${c.campers?.first_name ?? ''} ${c.campers?.last_name ?? ''}`
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    )
+    .filter((c) => {
+      if (waiverFilter === 'received') return c.liability_waiver
+      if (waiverFilter === 'missing') return !c.liability_waiver
+      return true
+    })
 
   if (authLoading) {
     return <div style={{ padding: 24, fontFamily: 'Arial, sans-serif' }}>Loading...</div>
@@ -978,6 +985,26 @@ function App() {
             onChange={(e) => setSearch(e.target.value)}
             style={{ marginTop: 10, marginBottom: 10, width: '100%' }}
           />
+
+          <select
+            value={waiverFilter}
+            onChange={(e) => setWaiverFilter(e.target.value)}
+            style={{
+              marginBottom: 10,
+              padding: 10,
+              fontSize: 16,
+              borderRadius: 8,
+              border: '1px solid #ccc',
+            }}
+          >
+            <option value="all">All waiver statuses</option>
+            <option value="received">Waiver received</option>
+            <option value="missing">Waiver missing</option>
+          </select>
+
+          <p style={{ fontSize: 14, color: '#555' }}>
+  Showing {filteredCampers.length} of {campers.length} registrations
+</p>
 
           {loading ? (
             <p>Loading...</p>
