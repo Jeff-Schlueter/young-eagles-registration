@@ -19,6 +19,7 @@ function App() {
   const [authPassword, setAuthPassword] = useState('')
   const [authLoading, setAuthLoading] = useState(true)
   const [waiverFilter, setWaiverFilter] = useState('all')
+  const [registrationStatusFilter, setRegistrationStatusFilter] = useState('active')
 
   const [form, setForm] = useState({
     first_name: '',
@@ -696,6 +697,21 @@ function App() {
       loadCampers()
     }
   }
+  async function removeFromSession(id) {
+    if (!window.confirm('Remove this camper from the current session? The camper record will be kept.')) return
+
+    const { error } = await supabase
+      .from('registrations')
+      .update({ registration_status: 'cancelled' })
+      .eq('id', id)
+
+    if (error) {
+      console.error(error)
+      alert('Error removing camper from session')
+    } else {
+      loadCampers(selectedSessionId)
+    }
+  }
 
   async function handleSignIn(e) {
     e.preventDefault()
@@ -741,6 +757,19 @@ function App() {
     .filter((c) => {
       if (waiverFilter === 'received') return c.liability_waiver
       if (waiverFilter === 'missing') return !c.liability_waiver
+      return true
+    })
+    .filter((c) => {
+      const status = c.registration_status || 'registered'
+
+      if (registrationStatusFilter === 'active') {
+        return status === 'registered' || status === 'waitlist'
+      }
+
+      if (registrationStatusFilter === 'cancelled') {
+        return status === 'cancelled'
+      }
+
       return true
     })
 
@@ -985,26 +1014,41 @@ function App() {
             onChange={(e) => setSearch(e.target.value)}
             style={{ marginTop: 10, marginBottom: 10, width: '100%' }}
           />
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+            <select
+              value={registrationStatusFilter}
+              onChange={(e) => setRegistrationStatusFilter(e.target.value)}
+              style={{
+                padding: 10,
+                fontSize: 16,
+                borderRadius: 8,
+                border: '1px solid #ccc',
+              }}
+            >
+              <option value="active">Active registrations</option>
+              <option value="cancelled">Cancelled / withdrawn</option>
+              <option value="all">All registration statuses</option>
+            </select>
 
-          <select
-            value={waiverFilter}
-            onChange={(e) => setWaiverFilter(e.target.value)}
-            style={{
-              marginBottom: 10,
-              padding: 10,
-              fontSize: 16,
-              borderRadius: 8,
-              border: '1px solid #ccc',
-            }}
-          >
-            <option value="all">All waiver statuses</option>
-            <option value="received">Waiver received</option>
-            <option value="missing">Waiver missing</option>
-          </select>
+            <select
+              value={waiverFilter}
+              onChange={(e) => setWaiverFilter(e.target.value)}
+              style={{
+                padding: 10,
+                fontSize: 16,
+                borderRadius: 8,
+                border: '1px solid #ccc',
+              }}
+            >
+              <option value="all">All waiver statuses</option>
+              <option value="received">Waiver received</option>
+              <option value="missing">Waiver missing</option>
+            </select>
+          </div>
 
           <p style={{ fontSize: 14, color: '#555' }}>
-  Showing {filteredCampers.length} of {campers.length} registrations
-</p>
+            Showing {filteredCampers.length} of {campers.length} registrations
+          </p>
 
           {loading ? (
             <p>Loading...</p>
@@ -1025,7 +1069,7 @@ function App() {
                   <th align="left">Photo</th>
                   <th align="left">Status</th>
                   <th align="left">Edit</th>
-                  <th align="left">Delete</th>
+                  <th align="left">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -1094,8 +1138,8 @@ function App() {
                         </button>
                       </td>
                       <td>
-                        <button onClick={() => deleteRegistration(c.id)}>
-                          Delete
+                        <button onClick={() => removeFromSession(c.id)}>
+                          Remove
                         </button>
                       </td>
                     </tr>
