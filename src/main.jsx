@@ -712,6 +712,21 @@ function App() {
       loadCampers(selectedSessionId)
     }
   }
+  async function restoreToSession(id) {
+    if (!window.confirm('Restore this camper to the current session?')) return
+
+    const { error } = await supabase
+      .from('registrations')
+      .update({ registration_status: 'registered' })
+      .eq('id', id)
+
+    if (error) {
+      console.error(error)
+      alert('Error restoring camper to session')
+    } else {
+      loadCampers(selectedSessionId)
+    }
+  }
 
   async function handleSignIn(e) {
     e.preventDefault()
@@ -1138,9 +1153,25 @@ function App() {
                         </button>
                       </td>
                       <td>
-                        <button onClick={() => removeFromSession(c.id)}>
-                          Remove
-                        </button>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          {(c.registration_status || 'registered') === 'cancelled' ? (
+                            <>
+                              <button onClick={() => restoreToSession(c.id)}>
+                                Restore
+                              </button>
+
+                              {registrationStatusFilter === 'cancelled' && (
+                                <button onClick={() => deleteRegistration(c.id)}>
+                                  Hard Delete
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <button onClick={() => removeFromSession(c.id)}>
+                              Remove
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
