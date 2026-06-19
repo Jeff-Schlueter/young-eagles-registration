@@ -20,6 +20,9 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true)
   const [waiverFilter, setWaiverFilter] = useState('all')
   const [registrationStatusFilter, setRegistrationStatusFilter] = useState('active')
+  const [newSessionName, setNewSessionName] = useState('')
+  const [newSessionStartDate, setNewSessionStartDate] = useState('')
+  const [newSessionEndDate, setNewSessionEndDate] = useState('')
 
   const [form, setForm] = useState({
     first_name: '',
@@ -400,6 +403,41 @@ function App() {
     setEditingCamperId(registration.camper_id)
     setEditingGuardianId(primaryGuardian?.id || null)
     setEditingEmergencyId(emergency?.id || null)
+  }
+
+  async function createSession(e) {
+    e.preventDefault()
+
+    if (!newSessionName.trim()) {
+      alert('Please enter an event name')
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('sessions')
+      .insert([
+        {
+          name: newSessionName.trim(),
+          start_date: newSessionStartDate || null,
+          end_date: newSessionEndDate || null,
+          is_active: true,
+        },
+      ])
+      .select()
+      .single()
+
+    if (error) {
+      console.error(error)
+      alert(`Error creating event: ${error.message}`)
+      return
+    }
+
+    setNewSessionName('')
+    setNewSessionStartDate('')
+    setNewSessionEndDate('')
+
+    await loadCampers(data.id)
+    setSelectedSessionId(data.id)
   }
 
   async function addCamper(e) {
@@ -837,6 +875,31 @@ function App() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 24, alignItems: 'start' }}>
         <div style={{ border: '1px solid #ddd', borderRadius: 12, padding: 16 }}>
+          <h2>Add Event</h2>
+
+          <form onSubmit={createSession} style={{ display: 'grid', gap: 8, marginBottom: 20 }}>
+            <input
+              placeholder="Event name"
+              value={newSessionName}
+              onChange={(e) => setNewSessionName(e.target.value)}
+            />
+
+            <input
+              type="date"
+              value={newSessionStartDate}
+              onChange={(e) => setNewSessionStartDate(e.target.value)}
+            />
+
+            <input
+              type="date"
+              value={newSessionEndDate}
+              onChange={(e) => setNewSessionEndDate(e.target.value)}
+            />
+
+            <button type="submit">
+              Create Event
+            </button>
+          </form>
           <h2>Add Camper Registration</h2>
           {editingRegistrationId && (
             <p style={{ color: '#b45309', fontWeight: 'bold' }}>
@@ -1022,6 +1085,27 @@ function App() {
               </button>
             </div>
           </div>
+
+          <label style={{ display: 'grid', gap: 4, marginBottom: 10 }}>
+            <span style={{ fontSize: 14, fontWeight: 'bold' }}>Roster Event</span>
+            <select
+              value={selectedSessionId}
+              onChange={(e) => setSelectedSessionId(e.target.value)}
+              style={{
+                padding: 10,
+                fontSize: 16,
+                borderRadius: 8,
+                border: '1px solid #ccc',
+              }}
+            >
+              <option value="">Select an event</option>
+              {sessions.map((session) => (
+                <option key={session.id} value={session.id}>
+                  {session.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <input
             placeholder="Search camper..."
